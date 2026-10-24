@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCB 9.0 Survey — Every respondent</title>
+<meta name="description" content="All answers of each of the 50 anonymized respondents of the MCB community survey after 9.0.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css?v=2">
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="stamp" id="stamp"></span>
+  <h1>Every respondent</h1>
+  <p class="lede">All answers of each respondent, in the order the form was submitted. Respondents are anonymized; names mentioned inside answers are replaced with <b>[name]</b> and profanity is masked.</p>
+</header>
+<nav class="tabs" aria-label="Pages">
+  <a href="index.html">Summary</a>
+  <a href="respondents.html" aria-current="page">Every respondent</a>
+  <span class="grow"></span>
+  <a href="data/mcb-survey-9.0-anonymized.csv" download>Download CSV</a>
+</nav>
+<div class="tools">
+  <input id="search" type="search" placeholder="Search answers, e.g. “factories” or “raid timer”" aria-label="Search answers">
+  <span class="tag" id="count"></span>
+</div>
+<div class="jump" id="jump"></div>
+<main class="cards" id="cards"></main>
+<footer>“Started on version” is converted from free-text answers to one standard; “~” means approximate (the respondent gave a year or “just before X”). Release dates used: 2.0 Dec 2018 · 3.0 Dec 2019 · 4.0 Nov 2020 · 5.0 Mar 2022 · 6.0 Jul 2023 · 7.0 Feb 2025 · 8.0 Sep 2025 · 9.0 May 2026.</footer>
+</div>
+<script src="assets/data.js?v=2"></script>
+<script>
+const S = window.SURVEY, N = S.n;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+document.getElementById('stamp').textContent = `${N} responses · ${S.dates}`;
+const OPEN = ['q6','q8','q9','q10','q11','q12','q13'];
+const label = k => `Q${k.slice(1)} · ${S.open[k].short}`;
+const started = v => v === 'unknown' ? 'unknown' : (v.startsWith('~') ? '~' + v.slice(1) : v);
+const card = r => `<article class="card" id="r${r.id}">
+  <div class="head"><h2>#${r.id}</h2><span class="tag">${esc(r.region)} · started on ${esc(started(r.started))} · Q7: ${r.q7}/10</span></div>
+  <dl class="facts">
+    <div><dt>Q2 · Region</dt><dd>${esc(r.region)}</dd></div>
+    <div><dt>Q3 · Started on version</dt><dd>${esc(started(r.started))}</dd></div>
+    <div><dt>Q4 · Core gameplay boring?</dt><dd>${esc(r.bored)}</dd></div>
+    <div><dt>Q7 · Willing to change (1–10)</dt><dd><span class="score">${[...Array(10)].map((_, i) => `<span class="${i < r.q7 ? 'on' : ''}"></span>`).join('')}</span><span class="mono">${r.q7}/10</span></dd></div>
+    <div><dt>Q14 · Season length</dt><dd>${esc(r.season)}</dd></div>
+    <div><dt>Q15 · Will you return?</dt><dd>${esc(r.ret)}</dd></div>
+  </dl>
+  <div class="qa"><div><b>Q5 · ${esc(S.closed.q5.short)}</b><ul class="reasons">${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+  ${OPEN.map(k => `<div><b>${esc(label(k))}</b><p>${r[k] ? esc(r[k]) : '<span class="empty">(empty)</span>'}</p></div>`).join('')}</div>
+</article>`;
+const cards = document.getElementById('cards'), count = document.getElementById('count');
+document.getElementById('jump').innerHTML = S.respondents.map(r => `<a class="id" href="#r${r.id}">#${r.id}</a>`).join('');
+function render(q) {
+  q = (q || '').trim().toLowerCase();
+  const list = q ? S.respondents.filter(r => JSON.stringify(r).toLowerCase().includes(q)) : S.respondents;
+  cards.innerHTML = list.length ? list.map(card).join('') : '<p class="empty">Nothing found.</p>';
+  count.textContent = q ? `${list.length} of ${N}` : `${N} respondents`;
+}
+render('');
+document.getElementById('search').addEventListener('input', e => render(e.target.value));
+if (location.hash) { const el = document.querySelector(location.hash); if (el) el.scrollIntoView(); }
+</script>
+</body>
+</html>

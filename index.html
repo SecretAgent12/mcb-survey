@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCB 9.0 Survey — Results</title>
+<meta name="description" content="Results of the MCB community survey after 9.0: 50 anonymized responses, totals for every question and all answers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css?v=2">
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="stamp" id="stamp"></span>
+  <h1>MCB 9.0 Survey — Results</h1>
+  <p class="lede" id="lede"></p>
+  <ul class="notes">
+    <li>Fully anonymized: respondents are numbered #1–#50 in the order they submitted the form. Names of players or staff mentioned inside answers are replaced with <b>[name]</b>.</li>
+    <li>Answers are shown as written. Profanity is masked with asterisks.</li>
+    <li>Percentages are out of all respondents. Bars show the share of respondents.</li>
+    <li>For open questions, themes were grouped manually by the admin. Every original answer is listed under each question, so you can check them yourself.</li>
+  </ul>
+</header>
+<nav class="tabs" aria-label="Pages">
+  <a href="index.html" aria-current="page">Summary</a>
+  <a href="respondents.html">Every respondent</a>
+  <span class="grow"></span>
+  <a href="data/mcb-survey-9.0-anonymized.csv" download>Download CSV</a>
+</nav>
+<div class="kpis" id="kpis"></div>
+<div class="toc" id="toc"></div>
+<main id="questions"></main>
+<footer>Source: Google Form responses, anonymized. Questions are quoted exactly as they appeared in the form.</footer>
+</div>
+<script src="assets/data.js?v=2"></script>
+<script>
+const S = window.SURVEY, N = S.n;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct = n => Math.round(n / N * 100) + '%';
+const idLink = id => `<a class="id" href="respondents.html#r${id}">#${id}</a>`;
+const byId = Object.fromEntries(S.respondents.map(r => [r.id, r]));
+document.getElementById('stamp').textContent = `${N} responses · ${S.dates}`;
+document.getElementById('lede').textContent = `Results of the community survey “${S.title}”. This page shows only the numbers and the answers — no conclusions.`;
+const q7 = S.closed.q7;
+document.getElementById('kpis').innerHTML = [
+  ['Responses', N, 'all respondents'],
+  ['Willingness to change · average', q7.mean.toString().replace('.', ','), 'Question 7: how far players are willing to go with radical changes, scale 1–10'],
+  ['Willingness to change · median', q7.median, 'Question 7: how far players are willing to go with radical changes, scale 1–10']
+].map(([l, v, s]) => `<div class="kpi"><span class="label">${l}</span><span class="v mono">${v}</span><span class="s">${s}</span></div>`).join('');
+document.getElementById('toc').innerHTML = S.order.map(k => `<a href="#${k}">Q${k.slice(1)}</a>`).join('');
+
+const rows = items => `<div class="rows">` + items.map(o => {
+  const n = o.ids.length, neg = o.label.startsWith('−');
+  return `<div class="row"><div class="top"><b>${esc(o.label)}</b><span class="num">${n} · ${pct(n)}</span></div><div class="track"><div class="fill${neg ? ' neg' : ''}" style="width:${n / N * 100}%"></div></div></div>`;
+}).join('') + `</div>`;
+const who = (items, title) => `<details><summary>${title}</summary><div class="who">` + items.filter(o => o.ids.length).map(o =>
+  `<div class="opt">${esc(o.label)} <span class="tag">(${o.ids.length})</span><div class="ids">${o.ids.map(idLink).join('')}</div></div>`).join('') + `</div></details>`;
+const head = (k, q) => `<div class="qhead"><span class="label">Question ${q.num}</span><h2>${esc(q.short)}</h2><p class="qtext">“${esc(q.text)}”</p></div>`;
+
+let html = '';
+for (const k of S.order) {
+  if (S.closed[k]) {
+    const q = S.closed[k];
+    html += `<section class="q" id="${k}">` + head(k, q);
+    if (q.note) html += `<p class="note">${esc(q.note)}</p>`;
+    if (q.scale) {
+      const max = Math.max(...q.scale.map(o => o.ids.length));
+      html += `<p class="stat">Average ${String(q.mean).replace('.', ',')} · median ${q.median}</p>`;
+      html += `<div class="hist">` + q.scale.map(o => `<div class="col" title="${o.label}/10: ${o.ids.length} (${pct(o.ids.length)})"><span class="cnt">${o.ids.length || ''}</span><div class="bar${o.ids.length ? '' : ' zero'}" style="height:${o.ids.length / max * 100}%"></div></div>`).join('') + `</div>`;
+      html += `<div class="hist-x">` + q.scale.map(o => `<span>${o.label}</span>`).join('') + `</div>`;
+      html += who(q.scale.map(o => ({label: o.label + '/10', ids: o.ids})).reverse(), 'Who picked what');
+    } else {
+      html += rows(q.options) + who(q.options, 'Who picked what');
+    }
+    html += `</section>`;
+  } else {
+    const q = S.open[k];
+    html += `<section class="q" id="${k}">` + head(k, q) + `<p class="note">${esc(q.note)}</p>` + rows(q.themes);
+    html += who(q.themes, 'Respondents in each theme');
+    html += `<details><summary>All ${N} answers</summary><div class="answers">` +
+      S.respondents.map(r => `<div class="ans"><span>${idLink(r.id)}</span><span class="t">${r[k] ? esc(r[k]) : '<span class="empty">(empty)</span>'}</span></div>`).join('') + `</div></details>`;
+    html += `</section>`;
+  }
+}
+document.getElementById('questions').innerHTML = html;
+if (location.hash) { const el = document.querySelector(location.hash); if (el) el.scrollIntoView(); }
+</script>
+</body>
+</html>
